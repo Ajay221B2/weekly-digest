@@ -14,5 +14,5 @@ KEYWORDS = [
     # add your own
 ]
 
-RECIPIENT_EMAIL = "you@gmail.com"
+RECIPIENT_EMAIL = "ajayjejurkar1997@gmail.com"
 DIGEST_SUBJECT  = "📰 Weekly Market Intelligence Digest"
