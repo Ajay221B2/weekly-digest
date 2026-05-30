@@ -51,4 +51,4 @@ def fetch_rss_articles(seen: dict) -> list[dict]:
     for url in WEBSITES:
         articles = scrape_site(url)
         new = [a for a in articles if a["url"] not in seen]
-        print(f"{url} → {len(new)} new articles"
+        print(f"{url} -> {len(new)} new articles")
