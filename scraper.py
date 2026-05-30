@@ -1,39 +1,54 @@
-import feedparser
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from config import WEBSITES
 
-def fetch_rss_articles(seen: dict) -> list[dict]:
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+
+def scrape_site(url: str) -> list[dict]:
     articles = []
-    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    try:
+        resp = requests.get(url, timeout=15, headers=HEADERS)
+        soup = BeautifulSoup(resp.text, "html.parser")
 
-    for url in WEBSITES:
-        feed = feedparser.parse(url)
-        for entry in feed.entries:
-            link    = entry.get("link", "")
-            title   = entry.get("title", "").strip()
-            summary = entry.get("summary", "").strip()
-
-            # parse publish date
-            published = None
-            if hasattr(entry, "published_parsed") and entry.published_parsed:
-                published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
-
-            # skip if older than 7 days
-            if published and published < cutoff:
+        # grab all anchor tags that look like article links
+        seen_titles = set()
+        for tag in soup.find_all(["h1", "h2", "h3", "h4"]):
+            title = tag.get_text(strip=True)
+            if len(title) < 20:
                 continue
-
-            # skip already seen
-            if link in seen:
+            if title in seen_titles:
                 continue
+            seen_titles.add(title)
+
+            # try to find closest anchor link
+            link_tag = tag.find("a") or tag.find_parent("a")
+            link = ""
+            if link_tag and link_tag.get("href"):
+                href = link_tag["href"]
+                if href.startswith("http"):
+                    link = href
+                else:
+                    from urllib.parse import urljoin
+                    link = urljoin(url, href)
 
             articles.append({
-                "url":       link,
+                "url":       link or url,
                 "title":     title,
-                "summary":   summary,
-                "source":    feed.feed.get("title", url),
-                "published": published.isoformat() if published else "unknown",
+                "summary":   "",
+                "source":    url,
+                "published": datetime.now(timezone.utc).isoformat(),
             })
 
+    except Exception as e:
+        print(f"Failed to scrape {url}: {e}")
+
     return articles
+
+
+def fetch_rss_articles(seen: dict) -> list[dict]:
+    all_articles = []
+    for url in WEBSITES:
+        articles = scrape_site(url)
+        new = [a for a in articles if a["url"] not in seen]
+        print(f"{url} → {len(new)} new articles"
