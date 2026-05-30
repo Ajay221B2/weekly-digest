@@ -7,7 +7,10 @@ def load_seen():
     if not os.path.exists(SEEN_FILE):
         return {}
     with open(SEEN_FILE) as f:
-        return json.load(f)
+        content = f.read().strip()
+        if not content:
+            return {}
+        return json.loads(content)
 
 def save_seen(seen: dict):
     with open(SEEN_FILE, "w") as f:
