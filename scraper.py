@@ -52,3 +52,5 @@ def fetch_rss_articles(seen: dict) -> list[dict]:
         articles = scrape_site(url)
         new = [a for a in articles if a["url"] not in seen]
         print(f"{url} -> {len(new)} new articles")
+        all_articles.extend(new)
+    return all_articles  # ← must be at this indentation level
